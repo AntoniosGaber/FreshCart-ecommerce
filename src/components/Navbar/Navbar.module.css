@@ -1,1 +1,40 @@
 
+/* Mobile-only tweaks for the off-canvas menu */
+@media (max-width: 1023px) {
+  /* reduce overall padding inside the drawer */
+  .mobileDrawer {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+    padding-top: 16px !important;
+    padding-bottom: 16px !important;
+  }
+
+  /* make links smaller + tighter */
+  .mobileDrawer a,
+  .mobileDrawer span {
+    font-size: 14px !important;
+    line-height: 20px !important;
+  }
+
+  /* tighten the button-like rows */
+  .mobileDrawer a.block,
+  .mobileDrawer span.block,
+  .mobileDrawer a.flex {
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+  }
+
+  /* icons slightly smaller */
+  .mobileDrawer i {
+    font-size: 16px !important;
+  }
+
+  /* cart badge smaller */
+  .mobileDrawer .rounded-full {
+    min-width: 18px !important;
+    height: 18px !important;
+    font-size: 11px !important;
+  }
+}

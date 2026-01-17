@@ -1,6 +1,7 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Encode+Sans+Expanded:wght@300&display=swap');
 
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -76,4 +77,20 @@ button{
 .active{
   color: var(--main-color);
 
+} 
+.product .btn {
+  opacity: 1;
+  transform: translateY(0);
+  transition: transform 0.4s ease, opacity 0.4s ease;
+} 
+@media (hover: hover) and (pointer: fine) {
+  .product .btn {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+
+  .product:hover .btn {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
