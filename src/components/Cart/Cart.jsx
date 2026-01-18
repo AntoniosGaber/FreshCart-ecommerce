@@ -7,20 +7,22 @@ export default function Cart() {
   const { cart, updateCartProductQuantitiy, getproductsCart, romoveItem } =
     useContext(CartContext);
 
-  const [busyId, setBusyId] = useState(null); // ✅ prevent double click / stale count
+  const [busyId, setBusyId] = useState(null);
+  const [pageLoading, setPageLoading] = useState(true);
 
   useEffect(() => {
-    if (!cart) getproductsCart();
-  }, [cart, getproductsCart]);
+    (async () => {
+      setPageLoading(true);
+      await getproductsCart(); // ✅ load once from server
+      setPageLoading(false);
+    })();
+  }, [getproductsCart]);
 
   async function handleUpdate(pid, newCount) {
     if (!pid || newCount < 1) return;
     try {
       setBusyId(pid);
-      await updateCartProductQuantitiy(pid, newCount);
-
-      // ✅ always refresh from server to avoid “sometimes”
-      await getproductsCart();
+      await updateCartProductQuantitiy(pid, newCount); // ✅ CartContext refreshes itself
     } finally {
       setBusyId(null);
     }
@@ -30,152 +32,163 @@ export default function Cart() {
     if (!pid) return;
     try {
       setBusyId(pid);
-      await romoveItem(pid);
-
-      // ✅ always refresh from server
-      await getproductsCart();
+      await romoveItem(pid); // ✅ CartContext refreshes itself
     } finally {
       setBusyId(null);
     }
   }
 
+  if (pageLoading) return <Loading />;
+
+  // ✅ empty cart state
+  if (!cart?.data?.products?.length) {
+    return (
+      <div className="p-6 text-center">
+        <h2 className="text-xl font-semibold">Your cart is empty</h2>
+        <Link to="/products" className="btn mt-4 inline-block">
+          Go Shopping
+        </Link>
+      </div>
+    );
+  }
+
   return (
-    <>
-      {cart ? (
-        <div>
-          <div className="relative bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto sm:overflow-visible">
-              <table className="w-full text-xs sm:text-sm text-left rtl:text-right text-gray-500 sm:table">
-                <thead className="hidden sm:table-header-group text-sm text-gray-700 bg-gray-50 border-b border-gray-200">
-                  <tr>
-                    <th scope="col" className="px-16 py-3">
-                      <span className="sr-only">Image</span>
-                    </th>
-                    <th scope="col" className="px-6 py-3 font-medium">
-                      Product
-                    </th>
-                    <th scope="col" className="px-6 py-3 font-medium">
-                      Qty
-                    </th>
-                    <th scope="col" className="px-6 py-3 font-medium">
-                      Price
-                    </th>
-                    <th scope="col" className="px-6 py-3 font-medium">
-                      Action
-                    </th>
-                  </tr>
-                </thead>
+    <div>
+      <div className="relative bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+        <div className="overflow-x-auto sm:overflow-visible">
+          <table className="w-full text-xs sm:text-sm text-left rtl:text-right text-gray-500 sm:table">
+            <thead className="hidden sm:table-header-group text-sm text-gray-700 bg-gray-50 border-b border-gray-200">
+              <tr>
+                <th scope="col" className="px-16 py-3">
+                  <span className="sr-only">Image</span>
+                </th>
+                <th scope="col" className="px-6 py-3 font-medium">
+                  Product
+                </th>
+                <th scope="col" className="px-6 py-3 font-medium">
+                  Qty
+                </th>
+                <th scope="col" className="px-6 py-3 font-medium">
+                  Price
+                </th>
+                <th scope="col" className="px-6 py-3 font-medium">
+                  Action
+                </th>
+              </tr>
+            </thead>
 
-                <tbody className="block sm:table-row-group">
-                  {cart?.data?.products?.map((item) => {
-                    const pid = item?.product?._id;
-                    const isBusy = busyId === pid;
+            <tbody className="block sm:table-row-group">
+              {cart.data.products.map((item) => {
+                const pid = item?.product?._id;
+                const isBusy = busyId === pid;
 
-                    return (
-                      <tr
-                        key={pid || item?._id}
-                        className="block sm:table-row bg-white border border-gray-200 sm:border-0 sm:border-b sm:border-gray-200 rounded-lg sm:rounded-none mb-3 sm:mb-0 overflow-hidden"
+                const imgSrc =
+                  item?.product?.imageCover ||
+                  item?.product?.images?.[0] ||
+                  "/placeholder.png";
+
+                return (
+                  <tr
+                    key={pid || item?._id}
+                    className="block sm:table-row bg-white border border-gray-200 sm:border-0 sm:border-b sm:border-gray-200 rounded-lg sm:rounded-none mb-3 sm:mb-0 overflow-hidden"
+                  >
+                    <td className="block sm:table-cell p-3 sm:p-4">
+                      <img
+                        src={imgSrc}
+                        className="w-28 sm:w-16 md:w-24 max-w-full max-h-full mx-auto sm:mx-0"
+                        alt={item?.product?.title || "product"}
+                        loading="lazy"
+                        onError={(e) => {
+                          e.currentTarget.src = "/placeholder.png";
+                        }}
+                      />
+                    </td>
+
+                    <td className="block sm:table-cell px-3 sm:px-6 py-2 sm:py-4 font-semibold text-gray-900 break-words">
+                      {item?.product?.title}
+                    </td>
+
+                    <td className="block sm:table-cell px-3 sm:px-6 py-2 sm:py-4">
+                      <div className="relative flex items-center gap-2">
+                        <button
+                          type="button"
+                          disabled={!pid || item.count <= 1 || isBusy}
+                          className="btn text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
+                          onClick={() => handleUpdate(pid, item.count - 1)}
+                        >
+                          {isBusy ? (
+                            <i className="fas fa-spinner fa-spin"></i>
+                          ) : (
+                            "-"
+                          )}
+                        </button>
+
+                        <span className="min-w-8 text-center text-xs sm:text-sm">
+                          {item.count}
+                        </span>
+
+                        <button
+                          type="button"
+                          disabled={!pid || isBusy}
+                          className="btn text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
+                          onClick={() => handleUpdate(pid, item.count + 1)}
+                        >
+                          {isBusy ? (
+                            <i className="fas fa-spinner fa-spin"></i>
+                          ) : (
+                            "+"
+                          )}
+                        </button>
+                      </div>
+                    </td>
+
+                    <td className="block sm:table-cell px-3 sm:px-6 py-2 sm:py-4 font-semibold text-gray-900">
+                      {item.price * item.count}
+                    </td>
+
+                    <td className="block sm:table-cell px-3 sm:px-6 py-2 sm:py-4">
+                      <button
+                        disabled={!pid || isBusy}
+                        onClick={() => handleRemove(pid)}
+                        className="btn mt-1 sm:mt-2 text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 w-full sm:w-auto"
                       >
-                        <td className="block sm:table-cell p-3 sm:p-4">
-                          <img
-                            src={item?.product?.imageCover}
-                            className="w-28 sm:w-16 md:w-24 max-w-full max-h-full mx-auto sm:mx-0"
-                            alt={item?.product?.title || "product"}
-                            loading="lazy"
-                          />
-                        </td>
-
-                        <td className="block sm:table-cell px-3 sm:px-6 py-2 sm:py-4 font-semibold text-gray-900 break-words">
-                          {item?.product?.title}
-                        </td>
-
-                        <td className="block sm:table-cell px-3 sm:px-6 py-2 sm:py-4">
-                          <div className="relative flex items-center justify-start sm:justify-start">
-                            <div className="relative flex items-center gap-2">
-                              <button
-                                type="button"
-                                disabled={!pid || item.count <= 1 || isBusy}
-                                className="btn text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
-                                onClick={() => handleUpdate(pid, item.count - 1)}
-                              >
-                                {isBusy ? (
-                                  <i className="fas fa-spinner fa-spin"></i>
-                                ) : (
-                                  "-"
-                                )}
-                              </button>
-
-                              <span className="min-w-8 text-center text-xs sm:text-sm">
-                                {item.count}
-                              </span>
-
-                              <button
-                                type="button"
-                                disabled={!pid || isBusy}
-                                className="btn text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
-                                onClick={() => handleUpdate(pid, item.count + 1)}
-                              >
-                                {isBusy ? (
-                                  <i className="fas fa-spinner fa-spin"></i>
-                                ) : (
-                                  "+"
-                                )}
-                              </button>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="block sm:table-cell px-3 sm:px-6 py-2 sm:py-4 font-semibold text-gray-900">
-                          {item.price * item.count}
-                        </td>
-
-                        <td className="block sm:table-cell px-3 sm:px-6 py-2 sm:py-4">
-                          <button
-                            disabled={!pid || isBusy}
-                            onClick={() => handleRemove(pid)}
-                            className="btn mt-1 sm:mt-2 text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 w-full sm:w-auto"
-                          >
-                            {isBusy ? (
-                              <i className="fas fa-spinner fa-spin"></i>
-                            ) : (
-                              "Remove"
-                            )}
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          <div className="cart-summary flex items-center justify-between gap-4 p-4 border rounded-md bg-white">
-            <h2 className="text-lg font-semibold text-gray-800">
-              Total:
-              <span className="ml-2 font-bold text-emerald-600">
-                {cart?.data?.totalCartPrice ?? 0} EGP
-              </span>
-            </h2>
-
-            <Link to="/checkout">
-              <button
-                type="button"
-                disabled={!cart?.data?.totalCartPrice}
-                className={`px-5 py-2 rounded-md text-sm font-semibold text-white transition ${
-                  cart?.data?.totalCartPrice
-                    ? "bg-emerald-600 hover:bg-emerald-700"
-                    : "bg-gray-400 cursor-not-allowed"
-                }`}
-              >
-                Checkout
-              </button>
-            </Link>
-          </div>
+                        {isBusy ? (
+                          <i className="fas fa-spinner fa-spin"></i>
+                        ) : (
+                          "Remove"
+                        )}
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
-      ) : (
-        <Loading />
-      )}
-    </>
+      </div>
+
+      <div className="cart-summary flex items-center justify-between gap-4 p-4 border rounded-md bg-white">
+        <h2 className="text-lg font-semibold text-gray-800">
+          Total:
+          <span className="ml-2 font-bold text-emerald-600">
+            {cart?.data?.totalCartPrice ?? 0} EGP
+          </span>
+        </h2>
+
+        <Link to="/checkout">
+          <button
+            type="button"
+            disabled={!cart?.data?.totalCartPrice}
+            className={`px-5 py-2 rounded-md text-sm font-semibold text-white transition ${
+              cart?.data?.totalCartPrice
+                ? "bg-emerald-600 hover:bg-emerald-700"
+                : "bg-gray-400 cursor-not-allowed"
+            }`}
+          >
+            Checkout
+          </button>
+        </Link>
+      </div>
+    </div>
   );
 }
