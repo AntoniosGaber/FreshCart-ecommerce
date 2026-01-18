@@ -1,16 +1,74 @@
-# React + Vite
+# FreshCart E-commerce 🛒
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+🌍 **Live Demo**  
+🔗 https://fresh-cart-ecommerce-topaz.vercel.app
 
-Currently, two official plugins are available:
+A production-ready **e-commerce web application** featuring authentication, protected routes, product browsing, cart management, and checkout flow.  
+Built with **React 18**, **Vite**, and **Tailwind CSS**, and deployed on **Vercel** with GitHub CI/CD integration.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## 🚀 Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **React 18**
+- **Vite**
+- **Tailwind CSS**
+- **React Router**
+- **Axios**
+- **Context API**
+- **Vercel (Deployment)**
 
-## Expanding the ESLint configuration
+---
+## 🧠 Architecture Overview
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+The application is built as a client-side React Single Page Application (SPA) that consumes a RESTful e-commerce API.
+
+Authentication is handled using JWT tokens stored in localStorage for simplicity in a frontend-only demo. Tokens are attached to API requests via Axios interceptors to protect authenticated routes.  
+In a production-grade system, HttpOnly cookies would be preferred for improved security.
+
+Global state such as authentication status and cart data is managed using React Context API to keep the application lightweight without introducing Redux.
+
+
+## ✨ Features
+
+- JWT-based authentication with protected routes (login / register / password reset)
+- Product listing and detailed product pages
+- Categories and brands browsing
+- Cart management (add / remove / update items)
+- Checkout flow
+- Responsive design (mobile-first)
+- Production deployment on Vercel
+
+
+---
+
+## 📁 Project Structure
+src/
+├── components/
+├── context/
+├── hooks/
+├── assets/
+├── pages/
+└── routes/ 
+
+---
+## 🛠️ Installation & Setup
+
+```bash
+npm install
+npm run dev
+
+
+## ⚠️ Known Limitations & Future Improvements
+
+- No backend ownership (relies on external API)
+- No refresh token or session persistence beyond localStorage
+- No automated testing yet (Jest / React Testing Library planned)
+- Future improvements include role-based access, improved error handling, and performance optimizations
+
+👤 Author
+
+Antonios Gaber
+🔗 https://github.com/AntoniosGaber
+
+
