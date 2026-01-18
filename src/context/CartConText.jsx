@@ -7,7 +7,6 @@ export const CartContext = createContext();
 export default function CartContextProvider({ children }) {
   const [cart, setCart] = useState(null);
 
-  // ✅ One source of truth: userToken
   const buildHeaders = useCallback(() => {
     const token = localStorage.getItem("userToken");
     return { token };
@@ -16,7 +15,12 @@ export default function CartContextProvider({ children }) {
   const getproductsCart = useCallback(async () => {
     try {
       const headers = buildHeaders();
-      if (!headers.token) return null;
+
+      // ✅ not logged in => no cart
+      if (!headers.token) {
+        setCart(null);
+        return null;
+      }
 
       const { data } = await axios.get(
         "https://ecommerce.routemisr.com/api/v1/cart",
@@ -26,6 +30,15 @@ export default function CartContextProvider({ children }) {
       setCart(data);
       return data;
     } catch (error) {
+      const status = error?.response?.status;
+      const msg = (error?.response?.data?.message || "").toLowerCase();
+
+      // ✅ treat as empty cart
+      if (status === 401 || msg.includes("no cart exist")) {
+        setCart(null);
+        return null;
+      }
+
       console.log(error);
       return null;
     }
@@ -38,28 +51,36 @@ export default function CartContextProvider({ children }) {
         toast.error("Please login first");
         return null;
       }
+      if (!productId) {
+        toast.error("Invalid product id");
+        return null;
+      }
 
-      const { data } = await axios.post(
+      await axios.post(
         "https://ecommerce.routemisr.com/api/v1/cart",
         { productId },
         { headers }
       );
 
-      setCart(data);
-      toast.success(data.message, { duration: 2000 });
-      return data;
+      // ✅ always refresh from server
+      const fresh = await getproductsCart();
+      toast.success("Added to cart", { duration: 2000 });
+      return fresh;
     } catch (error) {
       console.log(error);
-      toast.error(
-        error?.response?.data?.message || "Failed to add to cart",
-        { duration: 2000 }
-      );
+      toast.error(error?.response?.data?.message || "Failed to add to cart", {
+        duration: 2000,
+      });
       return null;
     }
   }
 
   async function updateCartProductQuantitiy(productId, count) {
     try {
+      if (!productId) {
+        toast.error("Invalid product id");
+        return null;
+      }
       if (count < 1) return null;
 
       const headers = buildHeaders();
@@ -68,15 +89,15 @@ export default function CartContextProvider({ children }) {
         return null;
       }
 
-      const { data } = await axios.put(
+      await axios.put(
         `https://ecommerce.routemisr.com/api/v1/cart/${productId}`,
         { count },
         { headers }
       );
 
-      setCart(data);
-      toast.success(data.message, { duration: 2000 });
-      return data;
+      // ✅ always refresh from server
+      const fresh = await getproductsCart();
+      return fresh;
     } catch (error) {
       console.log(error);
       toast.error(
@@ -89,35 +110,36 @@ export default function CartContextProvider({ children }) {
 
   async function romoveItem(productId) {
     try {
+      if (!productId) {
+        toast.error("Invalid product id");
+        return null;
+      }
+
       const headers = buildHeaders();
       if (!headers.token) {
         toast.error("Please login first");
         return null;
       }
 
-      const { data } = await axios.delete(
+      await axios.delete(
         `https://ecommerce.routemisr.com/api/v1/cart/${productId}`,
         { headers }
       );
 
-      setCart(data);
-      toast.success(data.message, { duration: 2000 });
-      return data;
+      // ✅ always refresh from server
+      const fresh = await getproductsCart();
+      return fresh;
     } catch (error) {
       console.log(error);
-      toast.error(
-        error?.response?.data?.message || "Failed to remove item",
-        { duration: 2000 }
-      );
+      toast.error(error?.response?.data?.message || "Failed to remove item", {
+        duration: 2000,
+      });
       return null;
     }
   }
 
-  // ✅ Also check userToken (NOT "token")
   useEffect(() => {
-    if (localStorage.getItem("userToken")) {
-      getproductsCart();
-    }
+    getproductsCart();
   }, [getproductsCart]);
 
   return (
