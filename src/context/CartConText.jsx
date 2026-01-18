@@ -7,18 +7,22 @@ export const CartContext = createContext();
 export default function CartContextProvider({ children }) {
   const [cart, setCart] = useState(null);
 
-  
+  // ✅ One source of truth: userToken
   const buildHeaders = useCallback(() => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("userToken");
     return { token };
   }, []);
 
   const getproductsCart = useCallback(async () => {
     try {
+      const headers = buildHeaders();
+      if (!headers.token) return null;
+
       const { data } = await axios.get(
         "https://ecommerce.routemisr.com/api/v1/cart",
-        { headers: buildHeaders() }
+        { headers }
       );
+
       setCart(data);
       return data;
     } catch (error) {
@@ -29,8 +33,8 @@ export default function CartContextProvider({ children }) {
 
   async function addToCart(productId) {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
+      const headers = buildHeaders();
+      if (!headers.token) {
         toast.error("Please login first");
         return null;
       }
@@ -38,17 +42,18 @@ export default function CartContextProvider({ children }) {
       const { data } = await axios.post(
         "https://ecommerce.routemisr.com/api/v1/cart",
         { productId },
-        { headers: buildHeaders() }
+        { headers }
       );
 
-     
       setCart(data);
-
       toast.success(data.message, { duration: 2000 });
       return data;
     } catch (error) {
       console.log(error);
-      toast.error("Failed to add to cart");
+      toast.error(
+        error?.response?.data?.message || "Failed to add to cart",
+        { duration: 2000 }
+      );
       return null;
     }
   }
@@ -57,10 +62,16 @@ export default function CartContextProvider({ children }) {
     try {
       if (count < 1) return null;
 
+      const headers = buildHeaders();
+      if (!headers.token) {
+        toast.error("Please login first");
+        return null;
+      }
+
       const { data } = await axios.put(
         `https://ecommerce.routemisr.com/api/v1/cart/${productId}`,
         { count },
-        { headers: buildHeaders() }
+        { headers }
       );
 
       setCart(data);
@@ -68,16 +79,25 @@ export default function CartContextProvider({ children }) {
       return data;
     } catch (error) {
       console.log(error);
-      toast.error("Failed to update quantity", { duration: 2000 });
+      toast.error(
+        error?.response?.data?.message || "Failed to update quantity",
+        { duration: 2000 }
+      );
       return null;
     }
   }
 
   async function romoveItem(productId) {
     try {
+      const headers = buildHeaders();
+      if (!headers.token) {
+        toast.error("Please login first");
+        return null;
+      }
+
       const { data } = await axios.delete(
         `https://ecommerce.routemisr.com/api/v1/cart/${productId}`,
-        { headers: buildHeaders() }
+        { headers }
       );
 
       setCart(data);
@@ -85,14 +105,17 @@ export default function CartContextProvider({ children }) {
       return data;
     } catch (error) {
       console.log(error);
-      toast.error("Failed to remove item", { duration: 2000 });
+      toast.error(
+        error?.response?.data?.message || "Failed to remove item",
+        { duration: 2000 }
+      );
       return null;
     }
   }
 
- 
+  // ✅ Also check userToken (NOT "token")
   useEffect(() => {
-    if (localStorage.getItem("token")) {
+    if (localStorage.getItem("userToken")) {
       getproductsCart();
     }
   }, [getproductsCart]);
