@@ -69,7 +69,7 @@ console.log(data?.data.data)
               </Link>
 
               <button
-                onClick={() => addToCart(product.id)}
+                onClick={() => addToCart(product._id)}
                 className="btn w-full mt-6"
               >
                 Add to Cart
