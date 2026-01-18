@@ -1,19 +1,43 @@
- import { useEffect, useContext } from "react";
+ import { useEffect, useContext, useState } from "react";
 import { CartContext } from "../../context/CartConText";
 import Loading from "../Loading/Loading";
 import { Link } from "react-router-dom";
 
 export default function Cart() {
-  const {
-    cart,
-    updateCartProductQuantitiy,
-    getproductsCart,
-    romoveItem,
-  } = useContext(CartContext);
+  const { cart, updateCartProductQuantitiy, getproductsCart, romoveItem } =
+    useContext(CartContext);
+
+  const [busyId, setBusyId] = useState(null); // ✅ prevent double click / stale count
 
   useEffect(() => {
     if (!cart) getproductsCart();
   }, [cart, getproductsCart]);
+
+  async function handleUpdate(pid, newCount) {
+    if (!pid || newCount < 1) return;
+    try {
+      setBusyId(pid);
+      await updateCartProductQuantitiy(pid, newCount);
+
+      // ✅ always refresh from server to avoid “sometimes”
+      await getproductsCart();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleRemove(pid) {
+    if (!pid) return;
+    try {
+      setBusyId(pid);
+      await romoveItem(pid);
+
+      // ✅ always refresh from server
+      await getproductsCart();
+    } finally {
+      setBusyId(null);
+    }
+  }
 
   return (
     <>
@@ -44,7 +68,8 @@ export default function Cart() {
 
                 <tbody className="block sm:table-row-group">
                   {cart?.data?.products?.map((item) => {
-                    const pid = item?.product?._id; // ✅ correct id for API
+                    const pid = item?.product?._id;
+                    const isBusy = busyId === pid;
 
                     return (
                       <tr
@@ -69,13 +94,15 @@ export default function Cart() {
                             <div className="relative flex items-center gap-2">
                               <button
                                 type="button"
-                                disabled={!pid || item.count <= 1}
+                                disabled={!pid || item.count <= 1 || isBusy}
                                 className="btn text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
-                                onClick={() =>
-                                  updateCartProductQuantitiy(pid, item.count - 1)
-                                }
+                                onClick={() => handleUpdate(pid, item.count - 1)}
                               >
-                                -
+                                {isBusy ? (
+                                  <i className="fas fa-spinner fa-spin"></i>
+                                ) : (
+                                  "-"
+                                )}
                               </button>
 
                               <span className="min-w-8 text-center text-xs sm:text-sm">
@@ -84,13 +111,15 @@ export default function Cart() {
 
                               <button
                                 type="button"
-                                disabled={!pid}
+                                disabled={!pid || isBusy}
                                 className="btn text-xs sm:text-sm px-2 sm:px-3 py-1 sm:py-2"
-                                onClick={() =>
-                                  updateCartProductQuantitiy(pid, item.count + 1)
-                                }
+                                onClick={() => handleUpdate(pid, item.count + 1)}
                               >
-                                +
+                                {isBusy ? (
+                                  <i className="fas fa-spinner fa-spin"></i>
+                                ) : (
+                                  "+"
+                                )}
                               </button>
                             </div>
                           </div>
@@ -102,11 +131,15 @@ export default function Cart() {
 
                         <td className="block sm:table-cell px-3 sm:px-6 py-2 sm:py-4">
                           <button
-                            disabled={!pid}
-                            onClick={() => romoveItem(pid)}
+                            disabled={!pid || isBusy}
+                            onClick={() => handleRemove(pid)}
                             className="btn mt-1 sm:mt-2 text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2 w-full sm:w-auto"
                           >
-                            Remove
+                            {isBusy ? (
+                              <i className="fas fa-spinner fa-spin"></i>
+                            ) : (
+                              "Remove"
+                            )}
                           </button>
                         </td>
                       </tr>
@@ -146,4 +179,3 @@ export default function Cart() {
     </>
   );
 }
-  
