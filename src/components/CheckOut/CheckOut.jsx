@@ -21,21 +21,25 @@ export default function CheckOut() {
       return;
     }
 
-    const returnUrl = `${window.location.origin}/allorders`;
+   const returnUrl = window.location.origin;
+
 
     try {
       setLoading(true);
+const returnUrl = window.location.origin;
 
-      const { data } = await axios.post(
-        `https://ecommerce.routemisr.com/api/v1/orders/checkout-session/${cart.cartId}?url=${encodeURIComponent(
-          returnUrl
-        )}`,
-        { shippingAddress },
-        { headers: { token } }
-      );
+const { data } = await axios.post(
+  `https://ecommerce.routemisr.com/api/v1/orders/checkout-session/${cart.cartId}?url=${encodeURIComponent(returnUrl)}`,
+  { shippingAddress },
+  { headers: { token: localStorage.getItem("userToken") } }
+);
+
+window.location.href = data.session.url;
+
+      
 
       toast.success("Redirecting to payment...");
-      window.location.href = data.session.url;
+      
     } catch (error) {
       console.log("Checkout error:", error?.response?.data || error);
       toast.error("Checkout failed");
